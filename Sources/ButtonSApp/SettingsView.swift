@@ -211,14 +211,6 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
-                if section != .about && section != .preview {
-                    Picker("", selection: $section) {
-                        EmptyView()
-                    }
-                    .labelsHidden()
-                    .frame(width: 0)
-                    .opacity(0)
-                }
             }
             .padding(.horizontal, 22)
             .padding(.top, 18)
@@ -663,28 +655,15 @@ struct SettingsView: View {
     // MARK: Логика проверки
 
     private func runPreview() {
-        var details: [String] = []
-        let words = testInput.split(separator: " ", omittingEmptySubsequences: false).map(String.init)
-        let converted = words.map { word -> String in
-            let trimmed = word.trimmingCharacters(in: .punctuationCharacters)
-            let suffix = String(word.dropFirst(trimmed.count))
-            guard !trimmed.isEmpty else { return word }
-
-            if settings.layoutEnabled, let decision = LayoutEngine.decide(trimmed) {
-                details.append("раскладка   \(trimmed) → \(decision.text)")
-                return decision.text + suffix
-            }
-            if settings.typosEnabled, settings.typoMode != "off",
-               let language = languageOf(trimmed),
-               let suggestion = TypoEngine.suggest(trimmed, language: language, maxDistance: settings.typoMaxDistance) {
-                let confidence = String(format: "%.2f", suggestion.confidence)
-                details.append("опечатка    \(trimmed) → \(suggestion.text)  (уверенность \(confidence))")
-                return suggestion.text + suffix
-            }
-            return word
-        }
-        testOutput = converted.joined(separator: " ")
-        testDetail = details
+        let result = PreviewCorrector.run(
+            testInput,
+            layoutEnabled: settings.layoutEnabled,
+            typosEnabled: settings.typosEnabled,
+            typoMode: settings.typoMode,
+            typoMaxDistance: settings.typoMaxDistance
+        )
+        testOutput = result.text
+        testDetail = result.details
     }
 }
 

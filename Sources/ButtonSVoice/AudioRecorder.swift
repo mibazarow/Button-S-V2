@@ -15,8 +15,14 @@ public final class AudioRecorder: @unchecked Sendable {
     private let targetRate: Double = 16_000
 
     public private(set) var isRecording = false
-    /// Текущая громкость 0...1 для индикатора.
-    public private(set) var level: Float = 0
+    /// Текущая громкость 0...1 для индикатора. Пишется из аудиопотока, читается
+    /// с главного — поэтому под замком, а не напрямую.
+    public var level: Float {
+        lock.lock()
+        defer { lock.unlock() }
+        return _level
+    }
+    private var _level: Float = 0
 
     public init() {}
 
@@ -67,7 +73,9 @@ public final class AudioRecorder: @unchecked Sendable {
 
     public func cancel() {
         _ = stop()
-        level = 0
+        lock.lock()
+        _level = 0
+        lock.unlock()
     }
 
     private func consume(buffer: AVAudioPCMBuffer, target: AVAudioFormat) {
@@ -94,15 +102,15 @@ public final class AudioRecorder: @unchecked Sendable {
 
         let frames = Array(UnsafeBufferPointer(start: channel, count: Int(output.frameLength)))
 
+        var peak: Float = 0
+        for value in frames { peak = max(peak, abs(value)) }
+
         lock.lock()
         if samples.count < 16_000 * 400 {
             samples.append(contentsOf: frames)
         }
+        _level = min(peak * 4, 1)
         lock.unlock()
-
-        var peak: Float = 0
-        for value in frames { peak = max(peak, abs(value)) }
-        level = min(peak * 4, 1)
     }
 
     private func awaitMicrophone() -> Bool {
@@ -110,16 +118,36 @@ public final class AudioRecorder: @unchecked Sendable {
         case .authorized:
             return true
         case .notDetermined:
+            // Колбэк приходит на другом потоке: результат передаём через
+            // семафор, а не через замыкание над локальной переменной.
             let semaphore = DispatchSemaphore(value: 0)
-            var granted = false
+            let box = ResultBox()
             AVCaptureDevice.requestAccess(for: .audio) { result in
-                granted = result
+                box.set(result)
                 semaphore.signal()
             }
             semaphore.wait()
-            return granted
+            return box.value
         default:
             return false
+        }
+    }
+
+    /// Одноразовая ячейка для результата из чужого потока.
+    private final class ResultBox: @unchecked Sendable {
+        private let lock = NSLock()
+        private var stored = false
+
+        func set(_ value: Bool) {
+            lock.lock()
+            stored = value
+            lock.unlock()
+        }
+
+        var value: Bool {
+            lock.lock()
+            defer { lock.unlock() }
+            return stored
         }
     }
 

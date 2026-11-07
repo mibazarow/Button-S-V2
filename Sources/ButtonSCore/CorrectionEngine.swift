@@ -48,7 +48,6 @@ public protocol PlatformActions: AnyObject, Sendable {
 public struct EngineSettings: Sendable {
     public var layoutEnabled = true
     public var autoSwitchLayout = true
-    public var layoutDelayMs = 0
     public var layout = LayoutSettings.default
 
     public var typosEnabled = true
@@ -85,8 +84,6 @@ public final class CorrectionEngine {
 
     public var settings: EngineSettings
     public private(set) var history: [AppliedChange] = []
-    /// Последнее предложение для всплывающей подсказки в режиме `.suggest`.
-    public var onSuggestion: ((String, String, Float) -> Void)?
     /// Уведомление о применённой правке.
     public var onCorrection: ((AppliedChange) -> Void)?
 
@@ -219,9 +216,6 @@ public final class CorrectionEngine {
                     if apply(.typo, from: word, to: suggestion.text, separator: separator) {
                         return suggestion.text
                     }
-                } else if settings.typoMode == .suggest {
-                    onSuggestion?(word, suggestion.text, suggestion.confidence)
-                    return nil
                 }
             }
         }

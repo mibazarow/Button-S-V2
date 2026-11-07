@@ -27,7 +27,6 @@ public final class SettingsStore: ObservableObject {
 
     @Published var autoPunctuation: Bool { didSet { save("autoPunctuation", autoPunctuation) } }
     @Published var removeFillers: Bool { didSet { save("removeFillers", removeFillers) } }
-    @Published var uiScale: Double { didSet { save("uiScale", uiScale) } }
 
     public init() {
         layoutEnabled = defaults.object(forKey: prefix + "layoutEnabled") as? Bool ?? true
@@ -46,7 +45,6 @@ public final class SettingsStore: ObservableObject {
         voiceLanguage = defaults.string(forKey: prefix + "voiceLanguage") ?? "ru"
         autoPunctuation = defaults.object(forKey: prefix + "autoPunctuation") as? Bool ?? true
         removeFillers = defaults.object(forKey: prefix + "removeFillers") as? Bool ?? true
-        uiScale = defaults.object(forKey: prefix + "uiScale") as? Double ?? 1.0
     }
 
     private func save(_ key: String, _ value: Any) {

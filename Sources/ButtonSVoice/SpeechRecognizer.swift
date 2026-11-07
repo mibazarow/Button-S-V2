@@ -64,11 +64,6 @@ public final class SpeechRecognizer: @unchecked Sendable {
         case downloading(Double)
         case ready
         case failed(String)
-
-        public var isDownloading: Bool {
-            if case .downloading = self { return true }
-            return false
-        }
     }
 
     /// Куда кладутся модели. Отдельная папка приложения, а не общий кэш HuggingFace.
