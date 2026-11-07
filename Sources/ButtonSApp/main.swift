@@ -3,25 +3,25 @@ import SwiftUI
 import ButtonSCore
 import ButtonSMac
 
-/// Точка входа: приложение живёт в статус-баре, без окна в Dock по умолчанию.
+/// Точка входа: приложение живёт в меню-баре, без окна в Dock.
+///
+/// Здесь намеренно нет SwiftUI-сцены `MenuBarExtra`: она создавала **второй**
+/// значок в меню-баре (иконка клавиатуры) рядом с тем, что рисует `StatusMenu`.
+/// Два значка на одно приложение — лишний шум, поэтому запускаем `NSApplication`
+/// напрямую и держим единственный `NSStatusItem` в `StatusMenu`.
 @main
-struct ButtonSApp: App {
-    @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
-
-    // Окно настроек создаётся вручную в StatusMenu: служебная сцена `Settings`
-    // здесь не нужна и перехватывает ⌘, своим пустым окном.
-    var body: some Scene {
-        MenuBarExtra("Button-S", systemImage: "keyboard") {
-            EmptyView()
-        }
-        .menuBarExtraStyle(.menu)
-    }
-}
-
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var controller: AppController?
     private var statusMenu: StatusMenu?
+
+    static func main() {
+        let app = NSApplication.shared
+        let delegate = AppDelegate()
+        app.delegate = delegate
+        app.setActivationPolicy(.accessory)
+        app.run()
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let controller = AppController()
@@ -38,7 +38,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
-        // Отладочный запуск сразу с открытыми настройками: ButtonS --open-settings
+        // Отладочный запуск сразу с открытыми настройками: ButtonS --open-settings
         if CommandLine.arguments.contains("--open-settings") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
                 self.statusMenu?.openSettingsForDebug()

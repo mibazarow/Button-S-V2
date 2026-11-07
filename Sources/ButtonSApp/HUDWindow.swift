@@ -1,9 +1,10 @@
 import AppKit
 import SwiftUI
+import ButtonSCore
 
 /// Индикатор диктовки — то же поведение, что было в первой версии:
 /// отдельное прозрачное окно 240×20 без рамки и тени, поверх всех окон,
-/// по центру верхнего края экрана (отступ 14 pt).
+/// по центру верхнего края экрана (отступ 54 pt от верхней кромки).
 /// Внутри — тонкая полоска 4 pt: уровень записи, бегущая полоса при
 /// распознавании, заливка на всю ширину при готовности.
 @MainActor
@@ -14,7 +15,9 @@ final class HUDWindow {
 
     static let width: CGFloat = 240
     static let height: CGFloat = 20
-    static let topInset: CGFloat = 14
+    /// Отступ от верхнего края экрана. Было 14 — упиралось в меню-бар и
+    /// терялось на светлых обоях, поэтому опущено на 40 pt.
+    static let topInset: CGFloat = 54
 
     init() {
         guard let screen = NSScreen.main ?? NSScreen.screens.first else { return }
@@ -51,8 +54,11 @@ final class HUDWindow {
     }
 
     /// Показать и перевести в состояние «запись».
+    /// Вызывается на каждом кадре уровня, поэтому повторный вызов — no-op:
+    /// иначе окно перепозиционировалось бы 30 раз в секунду.
     func show() {
         guard let window else { return }
+        if model.state == .recording, window.isVisible { return }
         reposition()
         model.state = .recording
         model.level = 0
@@ -114,8 +120,8 @@ struct HUDView: View {
     private var fillWidth: CGFloat {
         switch model.state {
         case .recording:
-            let raw = Double(model.level) * 900
-            return CGFloat(min(100, max(4, raw.rounded())))
+            // level приходит из LevelMeter: RMS → дБ → шкала → сглаживание.
+            return CGFloat(LevelMeter.fillPercent(level: model.level))
         case .processing:
             return 35
         case .done:

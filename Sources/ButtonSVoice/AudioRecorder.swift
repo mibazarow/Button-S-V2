@@ -48,7 +48,7 @@ public final class AudioRecorder: @unchecked Sendable {
         }
         self.converter = converter
 
-        input.installTap(onBus: 0, bufferSize: 4096, format: format) { [weak self] buffer, _ in
+        input.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
             self?.consume(buffer: buffer, target: targetFormat)
         }
 
@@ -102,14 +102,16 @@ public final class AudioRecorder: @unchecked Sendable {
 
         let frames = Array(UnsafeBufferPointer(start: channel, count: Int(output.frameLength)))
 
-        var peak: Float = 0
-        for value in frames { peak = max(peak, abs(value)) }
+        // Уровень считаем по RMS и переводим в децибелы: пик слишком дёрганый,
+        // а линейная шкала бесполезна — речь занимает узкий диапазон внизу.
+        let target = LevelMeter.normalize(rms: LevelMeter.rms(frames))
 
         lock.lock()
         if samples.count < 16_000 * 400 {
             samples.append(contentsOf: frames)
         }
-        _level = min(peak * 4, 1)
+        // Атака быстрая, спад медленный — как у настоящего индикатора.
+        _level = LevelMeter.smooth(previous: _level, target: target)
         lock.unlock()
     }
 

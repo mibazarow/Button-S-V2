@@ -95,7 +95,7 @@ public final class DictationService {
             while !Task.isCancelled {
                 guard let self, self.recorder.isRecording else { return }
                 self.onRecordingChanged?(true, self.recorder.level)
-                try? await Task.sleep(nanoseconds: 50_000_000)
+                try? await Task.sleep(nanoseconds: 33_000_000)
             }
         }
     }

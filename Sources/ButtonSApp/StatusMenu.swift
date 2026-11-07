@@ -18,7 +18,8 @@ final class StatusMenu: NSObject {
 
     private func buildMenu() {
         if let button = statusItem.button {
-            button.title = "BS"
+            button.image = Self.trayIcon()
+            button.imagePosition = .imageOnly
             button.toolTip = "Button-S v2"
         }
 
@@ -51,10 +52,35 @@ final class StatusMenu: NSObject {
         statusItem.menu = menu
     }
 
+    /// Иконка для меню-бара: жёлтый логотип приложения, вырезанный на прозрачный
+/// фон — так он читается и на светлой, и на тёмной теме.
+    ///
+    /// `tray_icon@2x.png` (44×44) ужимаем до 18×18 — стандартная высота строки
+    /// меню. `isTemplate = false` намеренно: нужен цветной логотип, а не
+    /// чёрный силуэт, перекрашиваемый системой под тему.
+    private static func trayIcon() -> NSImage? {
+        let name = NSScreen.main?.backingScaleFactor == 2 ? "tray_icon@2x.png" : "tray_icon.png"
+        guard let url = Resources.icon(name),
+              let source = NSImage(contentsOf: url) else { return nil }
+
+        let side: CGFloat = 18
+        let icon = NSImage(size: NSSize(width: side, height: side))
+        icon.lockFocus()
+        NSGraphicsContext.current?.imageInterpolation = .high
+        source.draw(in: NSRect(x: 0, y: 0, width: side, height: side))
+        icon.unlockFocus()
+
+        icon.isTemplate = false
+        return icon
+    }
+
     @objc private func togglePause() {
         controller.isPaused.toggle()
         statusItem.menu?.item(at: 0)?.title = controller.isPaused ? "Продолжить" : "Пауза"
-        statusItem.button?.title = controller.isPaused ? "BS⏸" : "BS"
+        // На паузе иконка гаснет, а не превращается в текст — так строка меню
+        // остаётся одного размера и не дёргает соседние значки.
+        statusItem.button?.appearsDisabled = controller.isPaused
+        statusItem.button?.toolTip = controller.isPaused ? "Button-S v2 — на паузе" : "Button-S v2"
     }
 
     @objc private func convertSelection() {
