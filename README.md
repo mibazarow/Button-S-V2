@@ -215,7 +215,16 @@ swift build -c release   # сборка
 
 ## Лицензия
 
-Смотрите первую версию — [служебные файлы](https://github.com/mibazarow/Button-S-local-corrector) (LICENSE.md, NOTICE.txt). Вторая версия — производная работа от неё и наследует её условия.
+**Source-available, не open-source.** Условия наследуются от первой версии, полный текст — [LICENSE.md](https://github.com/mibazarow/Button-S-local-corrector/blob/master/LICENSE.md).
+
+Коротко:
+
+- **Исходники открыты** для просмотра и изучения.
+- **Официальные сборки** можно бесплатно использовать в любых целях, включая коммерческие.
+- **Модификация и перепродажа** приложения или изменённых версий требуют письменного разрешения автора.
+- **Авторство обязательно:** `BUTTON-S by Михаил Базаров (https://bazarow.ru)`.
+
+Лицензии сторонних словарей — [NOTICE.txt](https://github.com/mibazarow/Button-S-local-corrector/blob/master/NOTICE.txt).
 
 ## Связанные репозитории
 
