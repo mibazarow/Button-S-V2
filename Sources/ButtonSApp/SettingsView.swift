@@ -211,14 +211,6 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
-                if section != .about && section != .preview {
-                    Picker("", selection: $section) {
-                        EmptyView()
-                    }
-                    .labelsHidden()
-                    .frame(width: 0)
-                    .opacity(0)
-                }
             }
             .padding(.horizontal, 22)
             .padding(.top, 18)
