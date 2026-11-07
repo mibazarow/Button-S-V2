@@ -36,7 +36,7 @@ public enum FrontmostApp {
 
     /// Адресная строка браузера: там править нельзя — ломает навигацию.
     public static func isBrowserAddressBar(bundleID: String) -> Bool {
-        guard let app = NSWorkspace.shared.frontmostApplication else { return false }
+        guard NSWorkspace.shared.frontmostApplication != nil else { return false }
         guard Self.browsers.contains(bundleID) else { return false }
         guard let focused = AXFocusedElement() else { return false }
 
@@ -62,6 +62,8 @@ public func AXFocusedElement() -> AXUIElement? {
     var focused: CFTypeRef?
     let status = AXUIElementCopyAttributeValue(system, kAXFocusedUIElementAttribute as CFString, &focused)
     guard status == .success, let value = focused else { return nil }
+    // AX-элемент приходит как CFTypeRef; тип проверяем, иначе крэш на чужом ответе.
+    guard CFGetTypeID(value) == AXUIElementGetTypeID() else { return nil }
     return (value as! AXUIElement)
 }
 
