@@ -15,24 +15,9 @@ public enum Accessibility {
     }
 
     /// Разрешён ли захват ввода (отдельное разрешение на macOS 10.15+).
-    public static func hasInputMonitoring() -> Bool {
-        CGPreflightListenEventAccess()
-    }
-
     @discardableResult
     public static func requestInputMonitoring() -> Bool {
         CGRequestListenEventAccess()
-    }
-
-    public static func hasMicrophone() -> Bool {
-        switch AVCaptureDevice.authorizationStatus(for: .audio) {
-        case .authorized: return true
-        default: return false
-        }
-    }
-
-    public static func requestMicrophone() async -> Bool {
-        await AVCaptureDevice.requestAccess(for: .audio)
     }
 }
 
