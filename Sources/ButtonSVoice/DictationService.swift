@@ -32,7 +32,6 @@ public final class DictationService {
 
     private var isDown = false
     private var prepareTask: Task<Void, Never>?
-    private var levelTask: Task<Void, Never>?
     private var model: SpeechRecognizer.ModelSize = .largeV3Turbo
     private var language = "ru"
 
@@ -40,8 +39,8 @@ public final class DictationService {
     public var onResult: ((String) -> Void)?
     /// Вызывается с текстом ошибки.
     public var onError: ((String) -> Void)?
-    /// Индикатор записи: true — пишем, второе значение — уровень 0...1.
-    public var onRecordingChanged: ((Bool, Float) -> Void)?
+    /// Индикатор записи: true — микрофон пишет, false — запись закончилась.
+    public var onRecordingChanged: ((Bool) -> Void)?
 
     public init() {}
 
@@ -81,30 +80,15 @@ public final class DictationService {
     private func startRecording() {
         do {
             try recorder.start()
-            onRecordingChanged?(true, 0)
-            startLevelFeed()
+            onRecordingChanged?(true)
         } catch {
             onError?(error.localizedDescription)
         }
     }
 
-    /// Пока идёт запись, отдаём уровень 20 раз в секунду — для индикатора.
-    private func startLevelFeed() {
-        levelTask?.cancel()
-        levelTask = Task { @MainActor [weak self] in
-            while !Task.isCancelled {
-                guard let self, self.recorder.isRecording else { return }
-                self.onRecordingChanged?(true, self.recorder.level)
-                try? await Task.sleep(nanoseconds: 33_000_000)
-            }
-        }
-    }
-
     private func finishRecording() {
-        levelTask?.cancel()
-        levelTask = nil
         let samples = recorder.stop()
-        onRecordingChanged?(false, 0)
+        onRecordingChanged?(false)
 
         // Меньше 0,3 с — это случайное касание, а не речь.
         guard samples.count >= 4_800 else { return }

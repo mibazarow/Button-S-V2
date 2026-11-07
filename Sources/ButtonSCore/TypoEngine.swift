@@ -30,18 +30,23 @@ public enum TypoEngine {
         if dictionary.known(language, word) { return nil }
 
         guard let list = dictionary.list(language) else { return nil }
-        let source = Array(Dictionary.normalize(word))
+        let normalized = Dictionary.normalize(word)
+        let source = Array(normalized)
+        let sourcePoints = normalized.unicodeScalars.map(\.value)
         var best: (word: String, distance: Int, penalty: Float, score: Float)?
-        var matrix = DamerauMatrix(width: source.count)
+        var matrix = DamerauMatrix(width: sourcePoints.count)
 
-        for (index, candidate) in list.words.enumerated() {
-            let candidateChars = list.chars[index]
-            if abs(candidateChars.count - source.count) > maxDistance { continue }
-            if candidateChars.first != source.first { continue }
-            guard let distance = matrix.distance(source, candidateChars, maxDistance) else { continue }
-            let score = list.scores[candidate] ?? 0
+        // Кандидаты только с тем же первым кодпоинтом: полный перебор 30 тысяч
+        // слов на каждый пробел был самой дорогой частью конвейера.
+        let candidates = list.indicesByFirst[sourcePoints.first ?? 0] ?? []
+
+        for index in candidates {
+            let candidatePoints = list.codepoints[index]
+            if abs(candidatePoints.count - sourcePoints.count) > maxDistance { continue }
+            guard let distance = matrix.distance(sourcePoints, candidatePoints, maxDistance) else { continue }
+            let score = list.scoreValues[index]
             if score < 3.0 { continue }
-            let penalty = keyboardPenalty(source, candidateChars)
+            let penalty = keyboardPenalty(source, list.chars[index])
 
             let better: Bool
             if let current = best {
@@ -53,7 +58,7 @@ public enum TypoEngine {
                 better = true
             }
             if better {
-                best = (candidate, distance, penalty, score)
+                best = (list.words[index], distance, penalty, score)
             }
         }
 
@@ -153,16 +158,32 @@ struct DamerauMatrix {
     private var prev: [Int]
     private var current: [Int]
 
+    /// Буферы заводятся с запасом и при необходимости растут.
+    ///
+    /// Раньше размер считался как `width + 2` от длины `source`, но при
+    /// `maxDistance = 2` к матрице проходил кандидат на два символа длиннее —
+    /// и цикл `0...m` вылезал за границу массива с `Index out of range`.
     init(width: Int) {
-        prevPrev = [Int](repeating: 0, count: width + 2)
-        prev = [Int](repeating: 0, count: width + 2)
-        current = [Int](repeating: 0, count: width + 2)
+        let capacity = width + 3
+        prevPrev = [Int](repeating: 0, count: capacity)
+        prev = [Int](repeating: 0, count: capacity)
+        current = [Int](repeating: 0, count: capacity)
     }
 
-    mutating func distance(_ source: [Character], _ target: [Character], _ max: Int) -> Int? {
+    /// Заранее расширяет буферы под конкретную пару строк.
+    private mutating func reserve(n: Int, m: Int) {
+        let needed = max(n, m) + 1
+        guard prev.count < needed else { return }
+        prevPrev = [Int](repeating: 0, count: needed)
+        prev = [Int](repeating: 0, count: needed)
+        current = [Int](repeating: 0, count: needed)
+    }
+
+    mutating func distance(_ source: [UInt32], _ target: [UInt32], _ max: Int) -> Int? {
         let n = source.count
         let m = target.count
         if abs(n - m) > max { return nil }
+        reserve(n: n, m: m)
 
         for index in 0...m { prev[index] = index }
         for index in 0...m { prevPrev[index] = prev[index] }

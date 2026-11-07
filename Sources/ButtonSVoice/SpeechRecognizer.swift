@@ -220,6 +220,16 @@ public final class SpeechRecognizer: @unchecked Sendable {
                 model: model.whisperKitID,
                 downloadBase: Self.modelsDirectory,
                 modelFolder: modelFolder(for: model).path,
+                // Без явных опций WhisperKit берёт свои дефолты, и префилл
+                // контекста считался на голом CPU. Гоняем на Neural Engine
+                // всё, что он умеет: энкодер, декодер и префилл. Mel остаётся
+                // на GPU — он дешёвый и на ANE только мешает пайплайну.
+                computeOptions: ModelComputeOptions(
+                    melCompute: .cpuAndGPU,
+                    audioEncoderCompute: .cpuAndNeuralEngine,
+                    textDecoderCompute: .cpuAndNeuralEngine,
+                    prefillCompute: .cpuAndNeuralEngine
+                ),
                 verbose: false,
                 logLevel: .error,
                 prewarm: true,

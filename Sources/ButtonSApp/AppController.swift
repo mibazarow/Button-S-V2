@@ -16,7 +16,6 @@ final class AppController: ObservableObject {
     @Published var micGranted = false
     @Published var micStatusText = "неизвестно"
     @Published var isRecording = false
-    @Published var recordLevel: Float = 0
     @Published var voiceError: String?
     @Published var modelState: SpeechRecognizer.ModelState = .unknown
     @Published var downloadedBytes: Int64 = 0
@@ -172,14 +171,12 @@ final class AppController: ObservableObject {
                 self?.hud.hide()
             }
         }
-        dictation.onRecordingChanged = { [weak self] recording, level in
+        dictation.onRecordingChanged = { [weak self] recording in
             Task { @MainActor in
                 guard let self else { return }
                 self.isRecording = recording
-                self.recordLevel = level
                 if recording {
                     self.hud.show()
-                    self.hud.updateLevel(level)
                 } else if self.voiceError == nil {
                     // отпустили клавишу — идёт распознавание
                     self.hud.showProcessing()

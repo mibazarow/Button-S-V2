@@ -12,6 +12,31 @@ public final class Dictionary: @unchecked Sendable {
         public let words: [String]
         public let chars: [[Character]]
         public let scores: [String: Float]
+        /// Веса параллельно `words` — чтобы горячий цикл не хешировал строки.
+        public let scoreValues: [Float]
+        /// Кодпоинты параллельно `words`.
+        ///
+        /// Расстояние Дамерау считаем по ним, а не по `[Character]`:
+        /// сравнение графемных кластеров в Swift дорогое, а сравнение
+        /// целых чисел — одна инструкция. На замерах это дало разницу
+        /// в разы на одном и том же алгоритме.
+        public let codepoints: [[UInt32]]
+        /// Индексы слов по первому кодпоинту.
+        public let indicesByFirst: [UInt32: [Int]]
+
+        public init(words: [String],
+                    chars: [[Character]],
+                    scores: [String: Float],
+                    scoreValues: [Float],
+                    codepoints: [[UInt32]],
+                    indicesByFirst: [UInt32: [Int]]) {
+            self.words = words
+            self.chars = chars
+            self.scores = scores
+            self.scoreValues = scoreValues
+            self.codepoints = codepoints
+            self.indicesByFirst = indicesByFirst
+        }
     }
 
     public let ru: WordList
@@ -111,15 +136,32 @@ public final class Dictionary: @unchecked Sendable {
         scores.reserveCapacity(words.count)
         var chars: [[Character]] = []
         chars.reserveCapacity(words.count)
+        var scoreValues: [Float] = []
+        scoreValues.reserveCapacity(words.count)
+        var codepoints: [[UInt32]] = []
+        codepoints.reserveCapacity(words.count)
+        var indicesByFirst: [UInt32: [Int]] = [:]
+        indicesByFirst.reserveCapacity(128)
 
         for (rank, word) in words.enumerated() {
             // Тот же вес, что в Rust: чем выше слово в списке, тем больше score.
             let value = log10((total + 1) / (Float(rank) + 1)) + 2
             scores[word] = value
             chars.append(Array(word))
+            scoreValues.append(value)
+            let points = word.unicodeScalars.map(\.value)
+            codepoints.append(points)
+            if let first = points.first {
+                indicesByFirst[first, default: []].append(rank)
+            }
         }
 
-        return WordList(words: words, chars: chars, scores: scores)
+        return WordList(words: words,
+                        chars: chars,
+                        scores: scores,
+                        scoreValues: scoreValues,
+                        codepoints: codepoints,
+                        indicesByFirst: indicesByFirst)
     }
 
     public static func normalize(_ word: String) -> String {

@@ -15,14 +15,6 @@ public final class AudioRecorder: @unchecked Sendable {
     private let targetRate: Double = 16_000
 
     public private(set) var isRecording = false
-    /// Текущая громкость 0...1 для индикатора. Пишется из аудиопотока, читается
-    /// с главного — поэтому под замком, а не напрямую.
-    public var level: Float {
-        lock.lock()
-        defer { lock.unlock() }
-        return _level
-    }
-    private var _level: Float = 0
 
     public init() {}
 
@@ -73,9 +65,6 @@ public final class AudioRecorder: @unchecked Sendable {
 
     public func cancel() {
         _ = stop()
-        lock.lock()
-        _level = 0
-        lock.unlock()
     }
 
     private func consume(buffer: AVAudioPCMBuffer, target: AVAudioFormat) {
@@ -102,16 +91,10 @@ public final class AudioRecorder: @unchecked Sendable {
 
         let frames = Array(UnsafeBufferPointer(start: channel, count: Int(output.frameLength)))
 
-        // Уровень считаем по RMS и переводим в децибелы: пик слишком дёрганый,
-        // а линейная шкала бесполезна — речь занимает узкий диапазон внизу.
-        let target = LevelMeter.normalize(rms: LevelMeter.rms(frames))
-
         lock.lock()
         if samples.count < 16_000 * 400 {
             samples.append(contentsOf: frames)
         }
-        // Атака быстрая, спад медленный — как у настоящего индикатора.
-        _level = LevelMeter.smooth(previous: _level, target: target)
         lock.unlock()
     }
 
