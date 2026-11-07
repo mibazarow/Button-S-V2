@@ -85,11 +85,11 @@ Button-S живёт в строке меню и следит за тем, что
 
 ## Установка
 
-Готовые сборки — в разделе [Releases](https://github.com/mibazarow/button-s-versia2/releases). Если релиза ещё нет, соберите сами — это три команды.
+Готовые сборки — в разделе [Releases](https://github.com/mibazarow/Button-S-V2/releases). Если релиза ещё нет, соберите сами — это три команды.
 
 ```bash
-git clone https://github.com/mibazarow/button-s-versia2.git
-cd button-s-versia2
+git clone https://github.com/mibazarow/Button-S-V2.git
+cd Button-S-V2
 ./build.sh release
 cp -R Build/Button-S.app /Applications/
 open -a /Applications/Button-S.app
@@ -230,5 +230,5 @@ swift build -c release   # сборка
 
 | Версия | Стек | Репозиторий |
 |---|---|---|
-| **v2** (эта) | Swift, SwiftUI, WhisperKit | [mibazarow/button-s-versia2](https://github.com/mibazarow/button-s-versia2) |
+| **v2** (эта) | Swift, SwiftUI, WhisperKit | [mibazarow/Button-S-V2](https://github.com/mibazarow/Button-S-V2) |
 | **v1** | Tauri, Rust, Svelte, Python | [mibazarow/Button-S-local-corrector](https://github.com/mibazarow/Button-S-local-corrector) |
