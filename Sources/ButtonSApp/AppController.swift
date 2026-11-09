@@ -30,6 +30,9 @@ final class AppController: ObservableObject {
     func start() {
         refreshPermissions()
         engine.settings = settings.engineSettings
+        settings.onChange = { [weak self] in
+            self?.applySettings()
+        }
         engine.onCorrection = { [weak self] change in
             Task { @MainActor in
                 guard let self else { return }

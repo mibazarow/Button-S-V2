@@ -28,6 +28,9 @@ public final class SettingsStore: ObservableObject {
     @Published var autoPunctuation: Bool { didSet { save("autoPunctuation", autoPunctuation) } }
     @Published var removeFillers: Bool { didSet { save("removeFillers", removeFillers) } }
 
+    /// Вызывается после любого изменения настройки, чтобы движок подхватил правку без перезапуска.
+    public var onChange: (() -> Void)?
+
     public init() {
         layoutEnabled = defaults.object(forKey: prefix + "layoutEnabled") as? Bool ?? true
         autoSwitchLayout = defaults.object(forKey: prefix + "autoSwitchLayout") as? Bool ?? true
@@ -49,6 +52,7 @@ public final class SettingsStore: ObservableObject {
 
     private func save(_ key: String, _ value: Any) {
         defaults.set(value, forKey: prefix + key)
+        onChange?()
     }
 
     /// Настройки в терминах движка.

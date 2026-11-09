@@ -129,4 +129,38 @@ final class EngineTests: XCTestCase {
         engine.boundary("\n")
         XCTAssertEqual(platform.lastInsertion, "2. ")
     }
+
+    // MARK: - Капитализация после точки
+
+    func testCapitalizesAfterSentenceEnd() {
+        let platform = FakePlatform()
+        let engine = CorrectionEngine(actions: platform)
+        type(engine, "Привет")
+        engine.boundary(".")
+        engine.boundary(" ")
+        type(engine, "мир")
+        XCTAssertEqual(platform.lastInsertion, "М")
+    }
+
+    func testDoesNotCapitalizeWhenDisabled() {
+        let platform = FakePlatform()
+        let engine = CorrectionEngine(actions: platform)
+        engine.settings.capitalizationEnabled = false
+        type(engine, "Привет")
+        engine.boundary(".")
+        engine.boundary(" ")
+        type(engine, "мир")
+        XCTAssertNotEqual(platform.lastInsertion, "М")
+    }
+    /// Известное ограничение: при включённой настройке домен после точки получает заглавную.
+    /// Тест фиксирует текущее поведение, чтобы правка не прошла незамеченной.
+    func testCapitalizationTouchesDomainWhenEnabled() {
+        let platform = FakePlatform()
+        let engine = CorrectionEngine(actions: platform)
+        type(engine, "Сайт")
+        engine.boundary(".")
+        engine.boundary(" ")
+        type(engine, "bazarow.ru")
+        XCTAssertEqual(platform.lastInsertion, "B")
+    }
 }

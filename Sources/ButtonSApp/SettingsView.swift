@@ -381,7 +381,7 @@ struct SettingsView: View {
                 DividerLine()
                 SettingRow(
                     title: "Заглавная после точки",
-                    hint: "Новое предложение начинается с большой буквы"
+                    hint: "Поднимать первую букву после точки, двоеточия и Enter"
                 ) {
                     Toggle("", isOn: $settings.capitalizationEnabled).labelsHidden()
                 }
